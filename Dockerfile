@@ -1,20 +1,22 @@
-# Use Java 17
-FROM eclipse-temurin:17-jdk-alpine
+# ---------- BUILD STAGE ----------
+FROM eclipse-temurin:17-jdk-alpine AS build
 
-# Set working directory
 WORKDIR /app
 
-# Copy project files
 COPY . .
 
-# Make mvnw executable
 RUN chmod +x mvnw
-
-# Build the application
 RUN ./mvnw clean package -DskipTests
 
-# Expose port
+
+# ---------- RUNTIME STAGE ----------
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+
+# Copy the built jar from build stage
+COPY --from=build /app/target/*.jar app.jar
+
 EXPOSE 8082
 
-# Run the Spring Boot jar (use shell so wildcard works)
-CMD sh -c "java -jar target/*.jar"
+ENTRYPOINT ["java", "-jar", "app.jar"]
